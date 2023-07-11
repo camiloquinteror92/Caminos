@@ -27,9 +27,8 @@
 </head>
 <body>
     <div class="content-container">
-        <h1>Report for ParentGlobalID: {{ parentglobalid }}</h1>
-
         {% for layer in layers %}
+           <h1>Informe: {{ nombre_via }}</h1>
             <h2>Layer ID: {{ layer.layer_id }}</h2>
             <div class="layer">
                 <div class="table-container">
@@ -63,7 +62,6 @@
                             <td><img src="{{ attachment }}" alt="Attachment"></td>
                         </tr>
                     {% endfor %}
-                    
                     </table>
                 </div>
             </div>

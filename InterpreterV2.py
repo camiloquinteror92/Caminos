@@ -42,29 +42,26 @@ def search_globalids(search_str, layer_id=0):
 
     return globalids
 
-
-    return globalids
-
 def create_html(records, parentglobalid, token):
     if records:
-        filename = f'resultados_{parentglobalid}.html'
         env = Environment(loader=FileSystemLoader('.'))
         template = env.get_template('report_template2.html')
 
         layers = []
+        # Inicializar nombre_via en el nivel más alto
+        nombre_via = ""
+
         for layer_id, layer_records in records.items():
             table_data = []
             attachments = []
 
-            field_aliases_url = f"{base_url}/{layer_id}?f=json&token={token}"
-            field_aliases_data = requests.get(field_aliases_url).json()
-            field_aliases = {field['name']: field['alias'] for field in field_aliases_data['fields']}
-
             for record in layer_records:
                 attributes = record.get('attributes')
                 for key, value in attributes.items():
-                    field_alias = field_aliases.get(key, key)
-                    table_data.append([field_alias, str(value)])
+                    table_data.append([key, str(value)])
+                    # Solo buscar nombreVia en los registros de la capa 0
+                    if layer_id == 0 and key == "nombreVia":
+                        nombre_via = str(value)
 
                 attachment_url = f"{base_url}/{layer_id}/{record['attributes']['objectid']}/attachments"
                 attachment_data = requests.get(attachment_url, params={'f': 'json', 'token': token}).json().get('attachmentInfos', [])
@@ -80,8 +77,10 @@ def create_html(records, parentglobalid, token):
                 'attachments': attachments
             })
 
+        filename = f'resultados_{parentglobalid}.html'
         with open(filename, 'w') as f:
-            f.write(template.render(layers=layers, parentglobalid=parentglobalid))
+            # Pasa nombre_via a la plantilla
+            f.write(template.render(layers=layers, parentglobalid=parentglobalid, nombre_via=nombre_via))
 
         print(f'Se ha generado el HTML: {filename}')
     else:
