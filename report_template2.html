@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report - {{ parentglobalid }}</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <style>
+        .content-container {
+            width: 80%;
+            margin: 0 auto;
+        }
+
+        .layer {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .layer .table-container,
+        .layer .attachments-container {
+            width: 45%;
+        }
+
+        .attachments-container img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="content-container">
+        <h1>Report for ParentGlobalID: {{ parentglobalid }}</h1>
+
+        {% for layer in layers %}
+            <h2>Layer ID: {{ layer.layer_id }}</h2>
+            <div class="layer">
+                <div class="table-container">
+                    <table>
+                        <tr>
+                            <th>ObjectID</th>
+                            <th>Key</th>
+                        </tr>
+                        {% for row in layer.table_data %}
+                            <tr>
+                                <td>{{ row[0] }}</td>
+                                <td>{{ row[1] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+
+                <div class="attachments-container">
+                    <h3>Attachments for Layer ID: {{ layer.layer_id }}</h3>
+                    <table>
+                        <tr>
+                            <th>ObjectID</th>
+                            <th>Attachment</th>
+                        </tr>
+                        {% for attachment in layer.attachments %}
+                        {% if loop.index > 1 and attachment.split('/')[-3] != layer.attachments[loop.index-2].split('/')[-3] %}
+                            <br>
+                        {% endif %}
+                        <tr>
+                            <td>{{ attachment.split('/')[-3] }}</td>
+                            <td><img src="{{ attachment }}" alt="Attachment"></td>
+                        </tr>
+                    {% endfor %}
+                    
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
