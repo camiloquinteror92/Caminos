@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Vía</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .logo {
+            max-width: 150px;
+            height: auto;
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .content-container {
+            width: 60%;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .layer {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .table-container {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        table {
+            width: 60%;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .data-container {
+            text-align: center;
+        }
+
+        .attachment-container {
+            margin-top: 10px;
+        }
+
+        img.attachment {
+            display: inline-block;
+            max-width: 90%;
+            height: auto;
+            margin-bottom: 5px;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+
+        @media print {
+            .content-container {
+                width: 100%;
+                padding: 0;
+            }
+
+            img.attachment {
+                max-width: 70%;
+            }
+
+            .logo-container img {
+                height: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-container">
+            <img class="logo" src="http://127.0.0.1:5000/static/img/Caminos.jpeg" title="Logo Caminos" />
+            <img class="logo" id="logoINVIAS" src="http://127.0.0.1:5000/static/img/Invias.jpeg" title="Logo INVIAS" />
+            <img class="logo" src="http://127.0.0.1:5000/static/img/Ministerio.jpeg" title="Logo MT" />
+        </div>
+        <h1>Reporte vía: {{ via_name }}</h1>
+        <div class="content-container">
+            {% for layer in layers %}
+            <div class="layer">
+                {% if loop.index == 1 %}
+                {% set layer_title = "Necesidades Caminos de la Paz Total" %}
+                {% elif layer.layer_title == "inventarioPropiedades" %}
+                {% set layer_title = "Inventario Propiedades" %}
+                {% elif layer.layer_title == "invSitioCritico" %}
+                {% set layer_title = "Inventario Sitio Crítico" %}
+                {% elif layer.layer_title == "invObraDrenaje" %}
+                {% set layer_title = "Inventario Obra Drenaje" %}
+                {% elif layer.layer_title == "invPuentes" %}
+                {% set layer_title = "Inventario Puentes" %}
+                {% elif layer.layer_title == "mejoraPlacaHuella" %}
+                {% set layer_title = "Mejora Placa Huella" %}
+                {% elif layer.layer_title == "mejoraObrasDrenaje" %}
+                {% set layer_title = "Mejora Obra Drenaje" %}
+                {% elif layer.layer_title == "invMuros" %}
+                {% set layer_title = "Inventario Muros" %}
+                {% elif layer.layer_title == "mantRoceria" %}
+                {% set layer_title = "Mantenimiento Rocería" %}
+                {% elif layer.layer_title == "mantBacheo" %}
+                {% set layer_title = "Mantenimiento Bacheo" %}
+                {% elif layer.layer_title == "mantRemocionDerrumbes" %}
+                {% set layer_title = "Mantenimiento Remoción Derrumbes" %}
+                {% elif layer.layer_title == "mantReconsZanjasCorona" %}
+                {% set layer_title = "Mantenimiento Reconstrucción Zanjas Corona" %}
+                {% elif layer.layer_title == "mantReparacionSenales" %}
+                {% set layer_title = "Mantenimiento Reparacionales" %}
+                {% elif layer.layer_title == "mejoraConstruccionBateas" %}
+                {% set layer_title = "Mejora Construcción Bateas" %}
+                {% elif layer.layer_title == "mejoraObraIngVerde" %}
+                {% set layer_title = "Mejora Obra Ing Verde" %}
+                {% elif layer.layer_title == "mejoraInstalacionSenales" %}
+                {% set layer_title = "Mejora Instalación Señales" %}
+                {% elif layer.layer_title == "mejoraObrasEstabilizacion" %}
+                {% set layer_title = "Mejora Obra Estabilización" %}
+                {% elif layer.layer_title == "mejoraPuentePonton" %}
+                {% set layer_title = "Mejora Puente Pontón" %}
+                {% elif layer.layer_title == "abscisaFinal" %}
+                {% set layer_title = "Abscisa Final" %}
+                {% endif %}
+                <h2>{{ layer_title }}</h2>
+                {% for parent_objectid, table_data, attachments in layer.data %}
+                <div class="data-container">
+                    <div class="table-container">
+                        <table>
+                            <tr>
+                                <th>Información</th>
+                                <th>Detalle</th>
+                            </tr>
+                            {% for row in table_data %}
+                            <tr>
+                                <td>{{ row[0] }}</td>
+                                <td>{{ row[1] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    {% if attachments %}
+                    <div class="attachment-container">
+                        {% for attachment in attachments %}
+                        <img class="attachment" src="{{ attachment }}" alt="Attachment">
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

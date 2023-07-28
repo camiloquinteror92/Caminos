@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generador de Informes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Generador de Informes</h1>
+    </header>
+
+    <main>
+        <form id="searchForm">
+            <label for="searchStr">Busca por palabra clave:</label>
+            <input type="text" id="searchStr" name="searchStr">
+            <br>
+            <label for="searchDeptoStr">Departamento:</label>
+            <select id="searchDeptoStr" name="searchDeptoStr">
+                <option value="">Todos</option>
+                {% for departamento in departamentos %}
+                    <option value="{{ departamento }}">{{ departamento }}</option>
+                {% endfor %}
+            </select>
+            <br>
+            <label for="searchMpioStr">Municipio:</label>
+            <select id="searchMpioStr" name="searchMpioStr">
+                <option value="">Todos</option>
+            </select>
+            <br>
+            <label for="searchVeredaStr">Vereda:</label>
+            <select id="searchVeredaStr" name="searchVeredaStr">
+                <option value="">Todos</option>
+            </select>
+            <br>
+            <label for="searchOrgStr">Organización:</label>
+            <select id="searchOrgStr" name="searchOrgStr">
+                <option value="">Todos</option>
+            </select>
+            <br>
+            <button type="submit">Buscar</button>
+            <button type="button" id="generateAllButton" disabled>Generar Todos los Informes</button>
+            <button type="button" id="resetButton">Reset</button>
+        </form>
+
+        <div id="results"></div>
+    </main>
+
+    <script>
+        $(document).ready(function() {
+            // Función para cambiar el color de fondo de las listas al hacer hover
+            $("#results").on("mouseenter", "li", function() {
+                $(this).addClass("hovered");
+            }).on("mouseleave", "li", function() {
+                $(this).removeClass("hovered");
+            });
+            function fetchInitialOrganizaciones() {
+                var selectedDepto = $('#searchDeptoStr').val();
+                var selectedMpio = $('#searchMpioStr').val();
+                var selectedVereda = $('#searchVeredaStr').val();
+                getOrganizaciones(selectedDepto, selectedMpio, selectedVereda);
+            }
+
+            fetchInitialOrganizaciones();
+
+            // Función para cambiar el color de fondo de las listas al hacer clic
+            $("#results").on("click", "li", function() {
+                $(this).toggleClass("clicked");
+            });
+
+            // Función para obtener las opciones de municipios y veredas
+            function getMunicipiosVeredas(selectedDepto, selectedMpio) {
+                $.ajax({
+                    url: '/get_municipios_veredas',
+                    type: 'POST',
+                    data: {
+                        selected_depto: selectedDepto
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        var municipios = response.municipios;
+                        var veredas = response.veredas;
+
+                        // Actualizar la lista de municipios
+                        var municipiosSelect = $('#searchMpioStr');
+                        municipiosSelect.empty();
+                        municipiosSelect.append('<option value="">Todos</option>');
+                        for (var i = 0; i < municipios.length; i++) {
+                            municipiosSelect.append('<option value="' + municipios[i] + '">' + municipios[i] + '</option>');
+                        }
+
+                        // Actualizar la lista de veredas
+                        var veredasSelect = $('#searchVeredaStr');
+                        veredasSelect.empty();
+                        veredasSelect.append('<option value="">Todos</option>');
+                        for (var i = 0; i < veredas.length; i++) {
+                            veredasSelect.append('<option value="' + veredas[i] + '">' + veredas[i] + '</option>');
+                        }
+                    }
+                });
+            }
+
+            // Obtener todas las opciones de municipios y veredas al iniciar
+            getMunicipiosVeredas('');
+
+            // Actualizar la lista de municipios al cambiar el departamento seleccionado
+            $('#searchDeptoStr').change(function() {
+                var selectedDepto = $(this).val();
+
+                // Actualizar la lista de municipios y veredas
+                getMunicipiosVeredas(selectedDepto);
+
+                // Obtener el municipio y la vereda seleccionados
+                var selectedMpio = $('#searchMpioStr').val();
+                var selectedVereda = $('#searchVeredaStr').val();
+
+                // Obtener las opciones de organizaciones
+                getOrganizaciones(selectedDepto, selectedMpio, selectedVereda);
+            });
+
+            // Actualizar la lista de veredas al cambiar el municipio seleccionado
+            $('#searchMpioStr').change(function() {
+                var selectedMpio = $(this).val();
+
+                // Actualizar la lista de veredas
+                $.ajax({
+                    url: '/get_veredas',
+                    type: 'POST',
+                    data: {
+                        selected_mpio: selectedMpio
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        var veredas = response.veredas;
+                        var veredasSelect = $('#searchVeredaStr');
+                        veredasSelect.empty();
+                        veredasSelect.append('<option value="">Todos</option>');
+                        for (var i = 0; i < veredas.length; i++) {
+                            veredasSelect.append('<option value="' + veredas[i] + '">' + veredas[i] + '</option>');
+                        }
+
+                        // Obtener el departamento seleccionado
+                        var selectedDepto = $('#searchDeptoStr').val();
+
+                        // Obtener la vereda seleccionada
+                        var selectedVereda = $('#searchVeredaStr').val();
+
+                        // Obtener las opciones de organizaciones
+                        getOrganizaciones(selectedDepto, selectedMpio, selectedVereda);
+                    }
+                });
+            });
+
+            // Función para obtener las opciones de organizaciones
+            function getOrganizaciones(selectedDepto, selectedMpio, selectedVereda) {
+                $.ajax({
+                    url: '/get_organizaciones',
+                    type: 'POST',
+                    data: {
+                        selected_depto: selectedDepto,
+                        selected_mpio: selectedMpio,
+                        selected_vereda: selectedVereda
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        var organizaciones = response.organizaciones;
+                        var organizacionesSelect = $('#searchOrgStr');
+                        organizacionesSelect.empty();
+                        organizacionesSelect.append('<option value="">Todos</option>');
+                        for (var i = 0; i < organizaciones.length; i++) {
+                            organizacionesSelect.append('<option value="' + organizaciones[i] + '">' + organizaciones[i] + '</option>');
+                        }
+                    }
+                });
+            }
+
+            // Enviar el formulario de búsqueda
+            $('#searchForm').submit(function(event) {
+                event.preventDefault();
+
+                var searchStr = $('#searchStr').val();
+                var searchDeptoStr = $('#searchDeptoStr').val();
+                var searchMpioStr = $('#searchMpioStr').val();
+                var searchVeredaStr = $('#searchVeredaStr').val();
+                var searchOrgStr = $('#searchOrgStr').val();
+
+                // Validar los valores de búsqueda
+                if (!searchStr && !searchDeptoStr && !searchMpioStr && !searchVeredaStr && !searchOrgStr) {
+                    $('#results').html('<p class="error-message">Ingrese al menos un criterio de búsqueda.</p>');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/generate_report',
+                    type: 'POST',
+                    data: {
+                        searchStr: searchStr,
+                        searchDeptoStr: searchDeptoStr,
+                        searchMpioStr: searchMpioStr,
+                        searchVeredaStr: searchVeredaStr,
+                        searchOrgStr: searchOrgStr // Se agrega la organización al formulario
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.error) {
+                            $('#results').html('<p class="error-message">' + response.error + '</p>');
+                        } else {
+                            var globalids = response.globalids;
+                            if (globalids.length === 0) {
+                                $('#results').html('<p class="no-results-message">No se encontraron coincidencias.</p>');
+                                $('#generateAllButton').prop('disabled', true);
+                            } else {
+                                var resultsHtml = '<ul>';
+                                for (var i = 0; i < globalids.length; i++) {
+                                    resultsHtml += '<li><a href="/generate_selected_report?selected_globalid=' + globalids[i].id + '" target="_blank">' + globalids[i].name + '</a></li>';
+                                }
+                                resultsHtml += '</ul>';
+                                $('#results').html(resultsHtml);
+                                $('#generateAllButton').prop('disabled', false);
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Generar todos los informes
+            $('#generateAllButton').click(function() {
+                $.ajax({
+                    url: '/generate_all_reports',
+                    type: 'POST',
+                    data: {
+                        searchStr: $('#searchStr').val(),
+                        searchDeptoStr: $('#searchDeptoStr').val(),
+                        searchMpioStr: $('#searchMpioStr').val(),
+                        searchVeredaStr: $('#searchVeredaStr').val()
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.error) {
+                            $('#results').html('<p class="error-message">' + response.error + '</p>');
+                        } else {
+                            var downloadUrl = response.download_url;
+                            window.open(downloadUrl, '_blank');
+                        }
+                    }
+                });
+            });
+
+            // Botón para borrar los inputs y resetear el formulario
+            $('#resetButton').click(function() {
+                $('#searchStr').val('');
+                $('#searchDeptoStr').val('');
+                $('#searchMpioStr').val('');
+                $('#searchVeredaStr').val('');
+                $('#results').empty();
+                $('#generateAllButton').prop('disabled', true);
+            });
+        });
+    </script>
+</body>
+</html>
