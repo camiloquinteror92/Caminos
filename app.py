@@ -8,13 +8,14 @@ import requests
 from flask import Flask, render_template, request, jsonify, make_response, send_file, url_for
 from flask_session import Session
 from jinja2 import Environment, FileSystemLoader
+from weasyprint import HTML
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__, static_url_path='/static')
 app.config['JSON_AS_ASCII'] = False
 app.config['SECRET_KEY'] = '0527'
 
 base_url = 'https://services6.arcgis.com/kyerLIHvrND0OSya/arcgis/rest/services/service_050fd5776aea42baa2d4c8fdf1b65aeb/FeatureServer'
-username = 'xxxxxx'
+username = 'xxxxx'
 password = 'xxxxxx'
 
 # Configurar Flask-Session
@@ -299,13 +300,36 @@ def get_departamentos():
             'token': token
         }
 
-        response = requests.get(url, params=params)
-        data = response.json()
+        all_departamentos = []  # List to store all departments
 
-        departamentos = list(set([record['attributes']['nombreDepartamento'] for record in data.get('features', [])]))
+        # Pagination parameters
+        records_per_page = 1000
+        start_record = 0
+
+        while True:
+            # Set pagination parameters
+            params['resultOffset'] = start_record
+            params['resultRecordCount'] = records_per_page
+
+            response = requests.get(url, params=params)
+            data = response.json()
+
+            # Append department names to the list
+            departamentos = [record['attributes']['nombreDepartamento'] for record in data.get('features', [])]
+            all_departamentos.extend(departamentos)
+
+            # Check if there are more records to fetch
+            if len(data.get('features', [])) < records_per_page:
+                break
+            else:
+                start_record += records_per_page
+
+        # Remove duplicate department names and return
+        departamentos = list(set(all_departamentos))
         return departamentos
 
     return []
+
 
 
 @app.route('/get_municipios', methods=['POST'])
@@ -432,6 +456,7 @@ def get_organizaciones():
 
 def capitalize_words(input_str):
     return ' '.join(word.capitalize() for word in input_str.split())
+
 
 @app.route('/generate_report', methods=['POST'])
 def generate_report():
@@ -579,26 +604,45 @@ def generate_all_reports():
 
 
 
-@app.route('/download_all_reports', methods=['GET'])
-def download_all_reports():
+""""@app.route('/convert_to_pdf', methods=['POST'])
+def convert_to_pdf():
     try:
-        filename = request.args.get('filename')
+        uploaded_file = request.files['zip_file']
 
-        if filename:
-            # Obtener la ruta completa del archivo ZIP
-            zip_filepath = os.path.join(os.getcwd(), filename)
+        if uploaded_file and uploaded_file.filename.endswith('.zip'):
+            zip_path = os.path.join(tempfile.gettempdir(), uploaded_file.filename)
+            uploaded_file.save(zip_path)
 
-            # Crear la respuesta y establecer el encabezado Content-Disposition
-            response = make_response(send_file(zip_filepath, as_attachment=True))
-            response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+            pdfs = []
 
-            return response
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                for filename in zip_ref.namelist():
+                    if filename.lower().endswith('.html'):
+                        with zip_ref.open(filename) as html_file:
+                            html_content = html_file.read().decode('utf-8')
+
+                            pdf_content = HTML(string=html_content).write_pdf()
+
+                            pdf_filename = os.path.splitext(filename)[0] + '.pdf'
+                            pdfs.append((pdf_filename, pdf_content))
+
+            pdf_zip_path = os.path.join(tempfile.gettempdir(), 'converted_pdfs.zip')
+
+            with zipfile.ZipFile(pdf_zip_path, 'w') as pdf_zip:
+                for pdf_filename, pdf_content in pdfs:
+                    pdf_zip.writestr(pdf_filename, pdf_content)
+
+            download_url = url_for('static', filename='converted_pdfs.zip')
+
+            return jsonify({'download_url': download_url})
+
+        else:
+            return jsonify({'error': 'Please upload a valid zip file containing HTML files.'})
 
     except Exception as e:
-        print(f'Error al descargar todos los informes: {e}')
+        print(f'Error converting HTML to PDF: {e}')
 
-    return jsonify({'error': 'Error al descargar todos los informes.'})
-
+    return jsonify({'error': 'Error converting HTML to PDF.'})"""
 
 if __name__ == '__main__':
     app.run()
