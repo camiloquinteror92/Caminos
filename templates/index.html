@@ -11,7 +11,7 @@
     </header>
 
     <main>
-        <form id="searchForm">
+        <form id="searchForm" enctype="multipart/form-data">
             <label for="searchStr">Busca por palabra clave:</label>
             <input type="text" id="searchStr" name="searchStr">
             <br>
@@ -38,7 +38,12 @@
                 <option value="">Todos</option>
             </select>
             <br>
+            <!--label for="zipFile">Cargar archivo ZIP:</label>
+            <input type="file" id="zipFile" name="zip_file" accept=".zip">
+            <button type="button" id="generatePDFButton" disabled>Generar Informes PDF</button>
+            <br-->
             <button type="submit">Buscar</button>
+            <span id="resultsCount"></span> <!-- Contador de vías encontradas -->
             <button type="button" id="generateAllButton" disabled>Generar Todos los Informes</button>
             <button type="button" id="resetButton">Reset</button>
         </form>
@@ -60,6 +65,39 @@
                 var selectedVereda = $('#searchVeredaStr').val();
                 getOrganizaciones(selectedDepto, selectedMpio, selectedVereda);
             }
+
+             // Habilitar botón de generación de PDF cuando se carga un archivo ZIP
+             $('#zipFile').change(function() {
+                var zipFile = $(this).prop('files')[0];
+                if (zipFile && zipFile.name.endsWith('.zip')) {
+                    $('#generatePDFButton').prop('disabled', false);
+                } else {
+                    $('#generatePDFButton').prop('disabled', true);
+                }
+            });
+
+            // Generar informes PDF a partir del archivo ZIP
+            $('#generatePDFButton').click(function() {
+                var formData = new FormData();
+                formData.append('zip_file', $('#zipFile').prop('files')[0]);
+
+                $.ajax({
+                    url: '/convert_to_pdf',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.error) {
+                            alert('Error al convertir HTML a PDF: ' + response.error);
+                        } else {
+                            var downloadUrl = response.download_url;
+                            window.open(downloadUrl, '_blank');
+                        }
+                    }
+                });
+            });
 
             fetchInitialOrganizaciones();
 
@@ -174,8 +212,8 @@
                 });
             }
 
-            // Enviar el formulario de búsqueda
-            $('#searchForm').submit(function(event) {
+           // Enviar el formulario de búsqueda
+           $('#searchForm').submit(function(event) {
                 event.preventDefault();
 
                 var searchStr = $('#searchStr').val();
@@ -187,6 +225,7 @@
                 // Validar los valores de búsqueda
                 if (!searchStr && !searchDeptoStr && !searchMpioStr && !searchVeredaStr && !searchOrgStr) {
                     $('#results').html('<p class="error-message">Ingrese al menos un criterio de búsqueda.</p>');
+                    $('#resultsCount').text(''); // Limpiar el contador si no hay resultados
                     return;
                 }
 
@@ -217,6 +256,9 @@
                                 resultsHtml += '</ul>';
                                 $('#results').html(resultsHtml);
                                 $('#generateAllButton').prop('disabled', false);
+
+                                // Mostrar el contador de resultados
+                                $('#resultsCount').text('Vías encontradas: ' + globalids.length);
                             }
                         }
                     }
